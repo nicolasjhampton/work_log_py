@@ -13,12 +13,37 @@ class Menu:
         print(self.message.replace("menuline", self.line))
 
     def input(self):
-        return input("> ").strip()
+        return input("> ").lower().strip()
 
     def run(self):
         self.display_menu()
         print("")
         return self.input()
+
+
+class OptionMenu(Menu):
+    def validate_key(self, raw):
+        if raw not in self.options:
+            raise ValueError("{} is not a valid key".format(raw))
+        else:
+            return raw
+
+    def display_choice_menu(self):
+        super().display_menu()
+        for key, value in self.options.items():
+            print("{}) {}".format(key, value.__doc__))
+        print("")
+
+    def run(self):
+        while True:
+            self.display_choice_menu()
+            raw = self.input()
+            try:
+                choice = self.validate_key(raw)
+            except ValueError as e:
+                input("\n{}".format(e))
+            else:
+                return self.options[choice]
 
 
 class NumberMenu(Menu):
@@ -58,7 +83,7 @@ class IndexMenu(NumberMenu, Menu):
     def run(self):
         while True:
             self.display_choice_menu()
-            raw = super().input()
+            raw = self.input()
             try:
                 choice = self.validate_choice(raw, len(self.options))
             except ValueError as e:
@@ -86,12 +111,12 @@ class ItemMenu(IndexMenu, NumberMenu, Menu):
     def second_run(self):
         print(self.second_message.replace("menuline", self.line))
         print("")
-        return super().input()
+        return self.input()
 
     def run(self):
         while True:
             self.display_item_menu()
-            raw = super().input()
+            raw = self.input()
             try:
                 key_choice = self.validate_key(raw)
             except ValueError as e:

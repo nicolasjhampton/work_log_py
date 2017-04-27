@@ -1,16 +1,3 @@
-main_config = {
-    "message": """Welcome to the work log!
-What would you like to do?
-menuline
-""",
-    "options": (
-        "add entry",
-        "look up entry",
-        "find matching phrase or pattern",
-        "quit work log"
-    )
-}
-
 find_config = {
     "message": """Find a previous record
 Find by...

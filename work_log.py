@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import re
 
@@ -8,52 +10,53 @@ from csv_interface import CSVInterface
 
 
 class WorkLog:
+    """Welcome to the work log!
+What would you like to do?
+menuline
+"""
+
     def __init__(self, **kwargs):
         self.model = kwargs.get("model")
-        self.view = kwargs.get("view")
+        self.view = kwargs.get("View")(self)
         for key, value in kwargs.items():
             setattr(self, key, value)
 
     def run(self):
         while True:
             records = self.model.read_records()
-            choice = self.view.main_menu_prompt()
-            if choice == "add entry":
-                task = self.add_entry()
-            elif choice == "look up entry":
-                task = self.find_entry(records)
-            elif choice == "find matching phrase or pattern":
-                task = self.match_entry(records)
-            elif choice == "quit work log":
-                sys.exit()
+            func = self.view.main_menu_prompt()
+            task = func(records)
             self.view.print_task(task)
 
-    def add_entry(self):
-        name, minutes, notes = self.view.add_entry_prompt()
-        task = {
-            "name": name,
-            "minutes": minutes,
-            "notes": notes,
-            "date": datetime.now().date()
-        }
-        self.model.write_record(**task)
+    @View.add_entry_prompt
+    def add_entry_option(self, records, **menu_input):
+        """add an entry"""
+        self.model.write_record(**menu_input)
         input("Record written!")
         return task
 
-    def find_entry(self, records):
-        method = self.view.find_prompt()
-        if method == "date":
-            tasks = self.gen_keys("date", records)
-        elif method == "task duration":
-            tasks = self.gen_keys("minutes", records)
-        task = self.view.task_prompt(tasks)
-        return task
+    @View.post_prompt("key")
+    def date_search_option(self, records, **menu_input):
+        """find an entry by date"""
+        tasks = self.gen_keys("date", records)
+        return tasks
 
-    def match_entry(self, records):
-        phrase = self.view.match_prompt()
-        tasks = self.match_entries(records, phrase)
-        task = self.view.task_prompt(tasks)
-        return task
+    @View.post_prompt("key")
+    def search_by_duration_option(self, records, **menu_input):
+        """find an entry by task duration"""
+        tasks = self.gen_keys("minutes", records)
+        return tasks
+
+    @View.post_prompt("key")
+    @View.pre_prompt("text")
+    def match_entry_option(self, records, **menu_input):
+        """match a phrase or pattern"""
+        tasks = self.match_entries(records, menu_input["phrase"])
+        return tasks
+
+    def x_quit_option(self, records):
+        """exit the program"""
+        sys.exit()
 
     def match_entries(self, records, phrase):
         matches = []
@@ -83,5 +86,5 @@ if __name__ == "__main__":
         "fieldnames": ['name', 'minutes', 'notes', 'date'],
         "filename": "work_log.csv"
     }
-    work_log = WorkLog(model=CSVInterface(**file_settings), view=View())
+    work_log = WorkLog(model=CSVInterface(**file_settings), View=View)
     work_log.run()
