@@ -1,11 +1,8 @@
-import menu_strings
-import inspect
 import re
 from math import ceil
 from functools import partial, wraps, update_wrapper
 from collections import OrderedDict
-from datetime import datetime
-from menu import Menu, NumberMenu, ItemMenu, OptionMenu
+from menu import Menu, NumberMenu, ItemMenu, OptionMenu, IndexMenu
 
 
 class DocView:
@@ -17,17 +14,23 @@ class DocView:
         "key": ItemMenu,
         "name": Menu,
         "notes": Menu,
-        "minutes": NumberMenu
+        "minutes": NumberMenu,
+        "date": ItemMenu,
+        "index": IndexMenu
     }
 
     def __init__(self, cont):
         self.main_menu = {}
         self.main_menu["options"] = OrderedDict()
         self.main_menu["message"] = cont.__class__.__doc__
-        for name, func in inspect.getmembers(cont, predicate=inspect.ismethod):
-            if name[-6:] == "option":
-                self.main_menu["options"][name[0]] = func
+        for name in dir(cont):
+            if not name[:2] == "__" and self.is_docview(cont, name):
+                self.main_menu["options"][name[0]] = getattr(cont, name)
         self.main_menu = self.menus["main"](**self.main_menu)
+
+    def is_docview(self, cont, method):
+        doc_exists = getattr(cont, method).__doc__
+        return doc_exists and doc_exists[:7] == "DocView"
 
     def main_prompt(func):
         def method(self, *args, **kwargs):
@@ -41,17 +44,16 @@ class DocView:
         messages = []
         regex = r"\*{pos}\*(?P<message>[\w\s.\n\'\-/:]+)\*{pos}\*".format(pos=pos)
         message_pattern = re.compile(regex, re.X | re.M)
-        for match in message_pattern.finditer(func.__doc__):
-            messages.append(match.groupdict())
-        return messages
+        message = message_pattern.search(func.__doc__)["message"]
+        return message
 
     def pre_prompt(menu_type):
         def wrapper(func, *args, **kwargs):
             @wraps(func)
             def method(self, *args_two, **kwargs_two):
                 Prompt = self.view.menus[menu_type]
-                message = self.view.get_message_text(func, menu_type)[0]  # fix
-                prompt = Prompt(**message)
+                message = self.view.get_message_text(func, menu_type)  # fix
+                prompt = Prompt(message=message)
                 kwargs_two[menu_type] = prompt()
                 return func(self, *args_two, **kwargs_two)
             return method
@@ -62,12 +64,9 @@ class DocView:
             @wraps(func)
             def method(self, *args, **kwargs):
                 items = func(self, *args, **kwargs)
-                messages = self.view.get_message_text(func, menu_type)
-                message = {
-                    "message": messages[0]["message"],
-                    "second_message": messages[1]["message"]}
+                message = self.view.get_message_text(func, menu_type)
                 PromptWithoutMessage = self.view.menus[menu_type]
-                Prompt = partial(PromptWithoutMessage, **message)
+                Prompt = partial(PromptWithoutMessage, message=message)
                 items_prompt = Prompt(items=items, items_key="name")
                 item = items_prompt()
                 return item

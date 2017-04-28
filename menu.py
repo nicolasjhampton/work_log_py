@@ -34,8 +34,7 @@ class OptionMenu(Menu):
     def display_choice_menu(self):
         super().display_menu()
         for key, value in self.options.items():
-            option = value.__name__.replace('option', '')  # rip this out later
-            choice = option.replace('_', ' ')
+            choice = value.__name__.replace('_', ' ')
             print("{}) {}".format(key, choice))
         print("")
 
@@ -52,6 +51,14 @@ class OptionMenu(Menu):
 
 
 class NumberMenu(Menu):
+    def validate_choice(self, raw, maxIndex):
+        """Used by child classes"""
+        choice = self.validate_number(raw)
+        if choice not in list(range(1, maxIndex + 1)):
+            raise ValueError("{} is not within range".format(choice))
+        else:
+            return choice
+
     def validate_number(self, raw):
         try:
             number = int(raw)
@@ -71,33 +78,7 @@ class NumberMenu(Menu):
                 return number
 
 
-class IndexMenu(NumberMenu, Menu):
-    def validate_choice(self, raw, maxIndex):
-        choice = super().validate_number(raw)
-        if choice not in list(range(1, maxIndex + 1)):
-            raise ValueError("{} is not within range".format(choice))
-        else:
-            return choice
-
-    def display_choice_menu(self):
-        super().display_menu()
-        for index, option in enumerate(self.options):
-            print("{}) {}".format(index + 1, option.title()))
-        print("")
-
-    def run(self):
-        while True:
-            self.display_choice_menu()
-            raw = self.input()
-            try:
-                choice = self.validate_choice(raw, len(self.options))
-            except ValueError as e:
-                input("\n{}".format(e))
-            else:
-                return self.options[choice - 1]
-
-
-class ItemMenu(IndexMenu, NumberMenu, Menu):
+class ItemMenu(NumberMenu, Menu):
     def validate_key(self, raw):
         if raw not in self.items.keys():
             raise ValueError("{} is not a valid key".format(raw))
@@ -113,11 +94,6 @@ class ItemMenu(IndexMenu, NumberMenu, Menu):
                 print("   {}) {}".format(index + 1, item[self.items_key]))
         print("")
 
-    def second_run(self):
-        print(self.second_message.replace("menuline", self.line))
-        print("")
-        return self.input()
-
     def run(self):
         while True:
             self.display_item_menu()
@@ -127,11 +103,23 @@ class ItemMenu(IndexMenu, NumberMenu, Menu):
             except ValueError as e:
                 input("\n{}".format(e))
             else:
-                raw = self.second_run()
-                try:
-                    value_choice = self.validate_choice(
-                                            raw, len(self.items[key_choice]))
-                except ValueError as e:
-                    input("\n{}".format(e))
-                else:
-                    return self.items[key_choice][value_choice - 1]
+                return self.items[key_choice]
+
+
+class IndexMenu(NumberMenu, Menu):
+    def display_choice_menu(self):
+        self.display_menu()
+        for index, item in enumerate(self.items):
+            print("{}) {}".format(index + 1, item[self.items_key]))
+        print("")
+
+    def run(self):
+        while True:
+            self.display_choice_menu()
+            raw = self.input()
+            try:
+                choice = self.validate_choice(raw, len(self.items))
+            except ValueError as e:
+                input("\n{}".format(e))
+            else:
+                return self.items[choice - 1]
