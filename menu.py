@@ -5,6 +5,9 @@ class Menu:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def __call__(self):
+        return self.run()
+
     def clear_screen(self):
         print("\033c", end="")
 
@@ -31,7 +34,9 @@ class OptionMenu(Menu):
     def display_choice_menu(self):
         super().display_menu()
         for key, value in self.options.items():
-            print("{}) {}".format(key, value.__doc__))
+            option = value.__name__.replace('option', '')  # rip this out later
+            choice = option.replace('_', ' ')
+            print("{}) {}".format(key, choice))
         print("")
 
     def run(self):
@@ -105,7 +110,7 @@ class ItemMenu(IndexMenu, NumberMenu, Menu):
             key, coll = group
             print("{}. {}:".format(groupIndex + 1, key))
             for index, item in enumerate(coll):
-                print("   {}) {}".format(index + 1, item[self.key]))
+                print("   {}) {}".format(index + 1, item[self.items_key]))
         print("")
 
     def second_run(self):

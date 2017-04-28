@@ -17,16 +17,17 @@ class Task(Model):
 
 tasks = [
     {"worker": "Nic", "name": "clean room", "minutes": 30,
-    "notes": "Make sure not to miss the corners. Cleanliness is godliness"},
+     "notes": "Make sure not to miss the corners. Cleanliness is godliness"},
     {"worker": "Nic", "name": "work", "minutes": 360,
-    "notes": "I love my job!"},
+     "notes": "I love my job!"},
     {"worker": "Nic", "name": "karaoke", "minutes": 120,
-    "notes": "It's a hard job, but somebody has to do it."},
+     "notes": "It's a hard job, but somebody has to do it."},
     {"worker": "Tonia", "name": "jogging", "minutes": 5,
-    "notes": "Fuck this."},
+     "notes": "Fuck this."},
     {"worker": "Bob", "name": "bake bread", "minutes": 90,
-    "notes": "Takes so long but smells so good. Some like it hot!"}
+     "notes": "Takes so long but smells so good. Some like it hot!"}
 ]
+
 
 def add_tasks(tasks):
     for task in tasks:
@@ -43,9 +44,11 @@ def add_tasks(tasks):
             if update:
                 task_record.save()
 
+
 def top_duration():
     task = Task.select().order_by(Task.minutes.desc()).get()
     return task
+
 
 def write_record(**kwargs):
     try:
@@ -60,6 +63,7 @@ def write_record(**kwargs):
                 update = True
         if update:
             task_record.save()
+
 
 def initialize():
     db.connect()

@@ -5,7 +5,7 @@ import re
 
 from datetime import datetime, timedelta
 
-from view import View
+from docview import DocView
 from csv_interface import CSVInterface
 
 
@@ -21,40 +21,50 @@ menuline
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def run(self):
+    def __call__(self):
         while True:
-            records = self.model.read_records()
-            func = self.view.main_menu_prompt()
-            task = func(records)
-            self.view.print_task(task)
+            self.run()
 
-    @View.add_entry_prompt
+    @DocView.main_prompt
+    def run(self):
+        return self.model.read_records()
+
+    @DocView.pre_prompt("name")
+    @DocView.pre_prompt("minutes")
+    @DocView.pre_prompt("notes")
     def add_entry_option(self, records, **menu_input):
-        """add an entry"""
+        """*notes*Please enter any notes related to this task\nmenuline*notes*
+           *minutes*Please enter total minutes spent on task\nmenuline*minutes*
+           *name*Please enter a name for the task\nmenuline*name*"""
+        menu_input["date"] = datetime.now().date()
         self.model.write_record(**menu_input)
         input("Record written!")
-        return task
+        return menu_input
 
-    @View.post_prompt("key")
+    @DocView.post_prompt("key")
     def date_search_option(self, records, **menu_input):
-        """find an entry by date"""
+        """*key*Please enter a date key:\nmenuline*key*
+           *key*Now enter a numbered item choice:*key*"""
         tasks = self.gen_keys("date", records)
         return tasks
 
-    @View.post_prompt("key")
+    @DocView.post_prompt("key")
     def search_by_duration_option(self, records, **menu_input):
-        """find an entry by task duration"""
+        """*key*Please enter a date key:\nmenuline*key*
+           *key*Now enter a numbered item choice:*key*"""
         tasks = self.gen_keys("minutes", records)
         return tasks
 
-    @View.post_prompt("key")
-    @View.pre_prompt("text")
+    @DocView.post_prompt("key")
+    @DocView.pre_prompt("text")
     def match_entry_option(self, records, **menu_input):
-        """match a phrase or pattern"""
-        tasks = self.match_entries(records, menu_input["phrase"])
+        """*text*Please enter a phrase/pattern:\nmenuline*text*
+           *key*Please enter a date key:\nmenuline*key*
+           *key*Now enter a numbered item choice:*key*"""
+        tasks = self.match_entries(records, menu_input["text"])
         return tasks
 
-    def x_quit_option(self, records):
+    def quit_the_program_option(self, records):
         """exit the program"""
         sys.exit()
 
@@ -86,5 +96,5 @@ if __name__ == "__main__":
         "fieldnames": ['name', 'minutes', 'notes', 'date'],
         "filename": "work_log.csv"
     }
-    work_log = WorkLog(model=CSVInterface(**file_settings), View=View)
-    work_log.run()
+    work_log = WorkLog(model=CSVInterface(**file_settings), View=DocView)
+    work_log()
