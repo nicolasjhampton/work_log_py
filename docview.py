@@ -2,7 +2,7 @@ import re
 from math import ceil
 from functools import partial, wraps, update_wrapper
 from collections import OrderedDict
-from menu import Menu, NumberMenu, ItemMenu, OptionMenu, IndexMenu
+from menu import Menu, ItemMenu, OptionMenu, IndexMenu
 
 
 class DocView:
@@ -14,7 +14,7 @@ class DocView:
         "key": ItemMenu,
         "name": Menu,
         "notes": Menu,
-        "minutes": NumberMenu,
+        "minutes": ItemMenu,
         "date": ItemMenu,
         "index": IndexMenu
     }
@@ -35,7 +35,7 @@ class DocView:
     def main_prompt(func):
         def method(self, *args, **kwargs):
             records = func(self, *args, **kwargs)
-            prompt = self.view.main_menu()
+            prompt = self.view.main_menu(regex=r"[\w]")
             item = prompt(records)
             self.view.print_item(item)
         return method
@@ -47,19 +47,19 @@ class DocView:
         message = message_pattern.search(func.__doc__)["message"]
         return message
 
-    def pre_prompt(menu_type):
+    def pre_prompt(regex, menu_type):
         def wrapper(func, *args, **kwargs):
             @wraps(func)
             def method(self, *args_two, **kwargs_two):
-                Prompt = self.view.menus[menu_type]
-                message = self.view.get_message_text(func, menu_type)  # fix
-                prompt = Prompt(message=message)
-                kwargs_two[menu_type] = prompt()
+                message = self.view.get_message_text(func, menu_type)
+                PromptWithoutMessage = self.view.menus[menu_type]
+                prompt = PromptWithoutMessage(message=message)
+                kwargs_two[menu_type] = prompt(regex=regex)
                 return func(self, *args_two, **kwargs_two)
             return method
         return wrapper
 
-    def post_prompt(menu_type):
+    def post_prompt(regex, menu_type):
         def wrapper(func):
             @wraps(func)
             def method(self, *args, **kwargs):
@@ -67,8 +67,9 @@ class DocView:
                 message = self.view.get_message_text(func, menu_type)
                 PromptWithoutMessage = self.view.menus[menu_type]
                 Prompt = partial(PromptWithoutMessage, message=message)
+                input(items)
                 items_prompt = Prompt(items=items, items_key="name")
-                item = items_prompt()
+                item = items_prompt(regex=regex)
                 return item
             return method
         return wrapper

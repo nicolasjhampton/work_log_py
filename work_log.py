@@ -30,9 +30,9 @@ menuline
     def run(self):
         return self.model.read_records()
 
-    @DocView.pre_prompt("name")
-    @DocView.pre_prompt("minutes")
-    @DocView.pre_prompt("notes")
+    @DocView.pre_prompt(r"([\w\s]+)", "name")
+    @DocView.pre_prompt(r"([\d]+)", "minutes")
+    @DocView.pre_prompt(r"([\w\d\s.\?\!:\-]+)", "notes")
     def add_entry(self, records, **menu_input):
         """DocView
         *notes*Please enter any notes related to this task\nmenuline*notes*
@@ -43,8 +43,8 @@ menuline
         input("Record written!")
         return menu_input
 
-    @DocView.post_prompt("index")
-    @DocView.post_prompt("date")
+    @DocView.post_prompt(r"([\d]+)", "index")
+    @DocView.post_prompt(r"([\d]{4}-[\d]{2}-[\d]{2})", "date")
     def date_search(self, records, **menu_input):
         """DocView
         *date*Please enter a date key:\nmenuline*date*
@@ -52,19 +52,19 @@ menuline
         tasks = self.gen_keys("date", records)
         return tasks
 
-    @DocView.post_prompt("index")
-    @DocView.post_prompt("date")
+    @DocView.post_prompt(r"([\d]+)", "index")
+    @DocView.post_prompt(r"([\d]+)", "minutes")
     def search_by_duration(self, records, **menu_input):
         """DocView
-        *date*Please enter a minutes key:\nmenuline*date*
+        *minutes*Please enter a minutes key:\nmenuline*minutes*
         *index*Now enter an item index:*index*"""
         tasks = self.gen_keys("minutes", records)
         return tasks
 
 
-    @DocView.pre_prompt("text")
-    @DocView.post_prompt("index")
-    @DocView.post_prompt("date")
+    @DocView.pre_prompt(r"([\w\d\s.\?\!:\-]+)", "text")
+    @DocView.post_prompt(r"([\d]+)", "index")
+    @DocView.post_prompt(r"([\d]{4}-[\d]{2}-[\d]{2})", "date")
     def match_entry(self, records, **menu_input):
         """DocView
         *text*Please enter a phrase/pattern:\nmenuline*text*
