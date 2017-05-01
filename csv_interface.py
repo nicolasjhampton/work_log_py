@@ -20,3 +20,11 @@ class CSVInterface:
             for row in reader:
                 records.append(dict(row))
         return records
+
+    def save_records(self, records):
+        with open(self.filename, "w") as file:
+            writer = csv.DictWriter(file, fieldnames=self.fieldnames)
+            input(records)
+            for row in records:
+                writer.writerow(row)
+        return records

@@ -1,6 +1,7 @@
 import re
+import subprocess
 
-class Menu:
+class TextMenu:
     line = "=" * 30 + "\n"
 
     def __init__(self, **kwargs):
@@ -13,131 +14,109 @@ class Menu:
     def clear_screen(self):
         print("\033c", end="")
 
+    def display_items(self):
+        if self.items.__class__.__name__ in ['dict']:
+            for key, item in enumerate(self.items):
+                print("{}) {}".format(key, item).rjust(2," "))
+        elif hasattr(self, "items"):
+            print(self.items)
+        print("")
+
+    def get_line(self):
+        rows, columns = subprocess.check_output(['stty', 'size']).decode().split()
+        return int(columns) - 2
+
+    def get_header(self):
+        line_char = "-"
+        batch_message = self.message.replace("menuline", (self.get_line() * line_char)).strip()
+        message_lines = batch_message.split('\n')
+        header = "+" + (self.get_line() * line_char) + "+"
+        for index, line in enumerate(message_lines):
+            spaces = self.get_line() - len(line)
+            padding = (spaces) * " "
+            line = "|" + line + padding + "|"
+            header += line
+        header += "+" + (self.get_line() * line_char) + "+\n"
+        return header
+
     def display_menu(self):
         self.clear_screen()
-        print(self.message.replace("menuline", self.line))
+        print(self.get_header())
+        if hasattr(self, "items"):
+            self.display_items()
 
-    def input(self, **kwargs):
+    def validate(self, raw, **kwargs):
         regex = kwargs.get("regex")
-        user_input = input("> ").lower().strip()
-        clean_input = re.search(regex, user_input)
+        clean_input = re.search(regex, raw)
         try:
             if clean_input:
-                something = clean_input.group()
-                return something
+                return clean_input.group()
             else:
-                raise ValueError("{} is not valid input".format(user_input))
+                raise ValueError("{} is not valid input".format(raw))
         except ValueError as e:
-            input("{}".format(e))
-            return self.run(**kwargs)
+            raise e
 
-
-    def run(self, **kwargs):
-        self.display_menu()
-        print("")
-        return self.input(**kwargs)
-
-
-
-
-class OptionMenu(Menu):
-    def validate_key(self, raw):
-        if raw not in self.options:
-            raise ValueError("{} is not a valid key".format(raw))
-        else:
-            return raw
-
-    def display_choice_menu(self):
-        super().display_menu()
-        for key, value in self.options.items():
-            choice = value.__name__.replace('_', ' ')
-            print("{}) {}".format(key, choice))
-        print("")
+    def input(self, **kwargs):
+        raw = input("> ").lower().strip()
+        return self.validate(raw, **kwargs)
 
     def run(self, **kwargs):
         while True:
-            self.display_choice_menu()
-            raw = self.input(**kwargs)
+            self.display_menu()
             try:
-                choice = self.validate_key(raw)
+                choice = self.input(**kwargs)
             except ValueError as e:
                 input("\n{}".format(e))
             else:
-                return self.options[choice]
+                input(choice)
+                self.items = choice if not hasattr(self, "items") else self.items
+                return choice, self.items
 
 
-# class NumberMenu(Menu):
-#
-#
-#     # def validate_number(self, raw):
-#     #     try:
-#     #         number = int(raw)
-#     #     except ValueError:
-#     #         raise ValueError("{} is not an integer".format(raw))
-#     #     else:
-#     #         return number
-#
-#     # def run(self, **kwargs):
-#     #     while True:
-#     #         raw = super().run(**kwargs)
-#     #         try:
-#     #             number = self.validate_number(raw)
-#     #         except ValueError as e:
-#     #             input("\n{}".format(e))
-#     #         else:
-#     #             return number
-
-
-class ItemMenu(Menu):
-    def validate_key(self, raw):
-        if raw not in self.items.keys():
-            raise ValueError("{} is not a valid key".format(raw))
+class DictMenu(TextMenu):
+    def validate(self, raw, **kwargs):
+        clean = super().validate(raw, **kwargs)
+        if clean not in self.items:
+            raise ValueError("{} is not a valid key".format(clean))
         else:
-            return raw
+            return clean
 
-    def display_item_menu(self):
-        self.display_menu()
-        for groupIndex, group in enumerate(self.items.items()):
-            key, coll = group
-            print("{}. {}:".format(groupIndex + 1, key))
-            for index, item in enumerate(coll):
-                print("   {}) {}".format(index + 1, item[self.items_key]))
+    def display_items(self):
+        if hasattr(self, "main") and getattr(self, "main") == True:
+            for key, value in self.items.items():
+                choice = value.__name__.replace('_', ' ')
+                print("{}) {}".format(key, choice))
+        else:
+            for index, item in enumerate(self.items):
+                print("{}) {}".format(index + 1, item).rjust(2," "))
         print("")
 
     def run(self, **kwargs):
-        while True:
-            self.display_item_menu()
-            raw = self.input(**kwargs)
-            try:
-                key_choice = self.validate_key(raw)
-            except ValueError as e:
-                input("\n{}".format(e))
-            else:
-                return self.items[key_choice]
+        choice, self.items = super().run(**kwargs)
+        return str(choice), self.items # self.items[choice]
 
 
-class IndexMenu(Menu):
-    def validate_choice(self, raw, maxIndex):
-        """Used by child classes"""
-        index = int(raw)
-        if index not in list(range(1, maxIndex + 1)):
-            raise ValueError("{} is not within range".format(index))
+class ArrayMenu(TextMenu):
+    def validate(self, raw, **kwargs):
+        clean = super().validate(raw, **kwargs)
+        try:
+            index = int(raw)
+        except ValueError as e:
+            raise ValueError("Expected number input, received {}".format(raw))
         else:
-            return index
+            if index not in list(range(1, len(self.items) + 1)):
+                raise ValueError("{} is not within range".format(index))
+            else:
+                return index
 
-    def display_choice_menu(self):
-        self.display_menu()
+    def display_items(self):
         for index, item in enumerate(self.items):
-            print("{}) {}".format(index + 1, item[self.items_key]))
+            print("{}) {}".format(index + 1, item["name"]).rjust(2," "))
         print("")
 
     def run(self, **kwargs):
-        while True:
-            self.display_choice_menu()
-            raw = self.input(**kwargs)
-            try:
-                choice = self.validate_choice(raw, len(self.items))
-            except ValueError as e:
-                input("\n{}".format(e))
-            else:
-                return self.items[choice - 1]
+        choice, self.items = super().run(**kwargs)
+        input("this")
+        input(choice)
+        input(self.items)
+        return int(choice - 1), self.items #self.items[choice - 1]
