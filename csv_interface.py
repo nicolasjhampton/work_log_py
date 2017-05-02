@@ -24,7 +24,6 @@ class CSVInterface:
     def save_records(self, records):
         with open(self.filename, "w") as file:
             writer = csv.DictWriter(file, fieldnames=self.fieldnames)
-            input(records)
             for row in records:
                 writer.writerow(row)
         return records

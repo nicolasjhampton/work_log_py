@@ -31,45 +31,39 @@ What would you like to do?"""
         return self.model.read_records()
 
     @DocView.pre_prompt(r"([\w\s]+)", "text:name")
-    @DocView.pre_prompt(r"([\d]+)", "text:number")
+    @DocView.pre_prompt(r"([\d]+)", "text:minutes")
     @DocView.pre_prompt(r"([\w\d\s.\?\!:\-]+)", "text:notes")
     def add_entry(self, records, **menu_input):
         """DocView
         *notes*Please enter any notes related to this task*notes*
-        *number*Please enter total minutes spent on task*number*
+        *minutes*Please enter total minutes spent on task*minutes*
         *name*Please enter a name for the task*name*"""
-        input(menu_input)
-        input("add_entry")
-        menu_input["minutes"] = menu_input["number"]
-        del menu_input["number"]
         menu_input["date"] = datetime.now().date()
-        self.model.write_record(**menu_input)
+        task = menu_input
+        self.model.write_record(**task)
         input("Record written!")
-        return None, menu_input
+        return None, task
 
-    @DocView.pre_prompt(r"([\w\s]+)", "array:item:name")
+    @DocView.pre_prompt(r"([\w\s]+)", "array:item")
     def delete_entry(self, records, **menu_input):
         """DocView
         *item*Now enter an item index:*item*"""
-        input(menu_input)
-        input(records)
-        records.remove(menu_input["item"])
+        task = menu_input["item"]
+        records.remove(task)
         self.model.save_records(records)
         input("Record removed!")
-        return None, menu_input["item"]
+        return None, task
 
-    @DocView.pre_prompt(r"([\w\s]+)", "array:index:name")
-    @DocView.pre_prompt(r"([\w]+)", "dict:item") # Make new menu
-    @DocView.pre_prompt(r"([\w\d\s.\?\!:\-]+)", "edit:edit")
+    @DocView.pre_prompt(r"([\w\s]+)", "array:index")
+    @DocView.pre_prompt(r"([\w]+)", "dict:item")
+    @DocView.pre_prompt(r"([\w\d\s.,\?\!:\-]+)", "edit:edit")
     def edit_entry(self, records, **menu_input):
         """DocView
         *index*Enter an item index:*index*
         *item*What field would you like to edit?*item*
         *edit*Please enter new value*edit*"""
-        input(menu_input)
-        input("edit_entry")
         recordIndex = records.index(menu_input["index"])
-        record = records.pop(recordIndex)
+        task = records.pop(recordIndex)
         for key, value in record.items():
             if value == menu_input['item']:
                 search_key = key
@@ -77,7 +71,7 @@ What would you like to do?"""
         records.insert(recordIndex, record)
         self.model.save_records(records)
         input("Record edited!")
-        return None, record
+        return None, task
 
     @DocView.post_prompt(r"([\d]+)", "array:item")
     @DocView.post_prompt(r"([\d]{4}-[\d]{2}-[\d]{2})", "dict:date")
@@ -86,7 +80,7 @@ What would you like to do?"""
         *date*Please enter a date key:*date*
         *item*Now enter an item index:*item*"""
         tasks = self.gen_keys("date", records)
-        return "date", tasks
+        return None, tasks
 
     @DocView.post_prompt(r"([\d]+)", "array:item")
     @DocView.post_prompt(r"([\d]+)", "dict:minutes")
@@ -95,9 +89,7 @@ What would you like to do?"""
         *minutes*Please enter a minutes key:*minutes*
         *item*Now enter an item index:*item*"""
         tasks = self.gen_keys("minutes", records)
-        return "minutes", tasks
-
-
+        return None, tasks
 
     @DocView.post_prompt(r"([\d]+)", "array:item")
     @DocView.post_prompt(r"([\d]{4}-[\d]{2}-[\d]{2})", "dict:date")
@@ -107,10 +99,8 @@ What would you like to do?"""
         *text*Please enter a phrase/pattern:*text*
         *date*Please enter a date key:*date*
         *item*Now enter a numbered item choice:*item*"""
-        input(menu_input)
-        input(records)
         tasks = self.match_entries(records, menu_input["text"])
-        return None, tasks
+        return tasks
 
     def match_entries(self, records, phrase):
         matches = []
@@ -134,9 +124,8 @@ What would you like to do?"""
             tasks[key].append(row)
         return tasks
 
-    def print_item(self, *args):
-        input(args[0])
-        choice, task = args[0]
+    def print_item(self, args):
+        task = self.view.unpack_results(*args)
         line_length = 30
         print("\033c", end="")
         print(task["date"])

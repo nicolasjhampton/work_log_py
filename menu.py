@@ -1,6 +1,7 @@
 import re
 import subprocess
 
+
 class TextMenu:
     line = "=" * 30 + "\n"
 
@@ -17,18 +18,21 @@ class TextMenu:
     def display_items(self):
         if self.items.__class__.__name__ in ['dict']:
             for key, item in enumerate(self.items):
-                print("{}) {}".format(key, item).rjust(2," "))
-        elif hasattr(self, "items"):
+                print("{}) {}".format(key, item).rjust(2, " "))
+        elif hasattr(self, "items") and self.items is not None:
             print(self.items)
         print("")
 
     def get_line(self):
-        rows, columns = subprocess.check_output(['stty', 'size']).decode().split()
+        rows, columns = subprocess.check_output(
+                                   ['stty', 'size']).decode().split()
         return int(columns) - 2
 
     def get_header(self):
         line_char = "-"
-        batch_message = self.message.replace("menuline", (self.get_line() * line_char)).strip()
+        batch_message = self.message.replace("menuline",
+                                             (self.get_line() * line_char)
+                                             ).strip()
         message_lines = batch_message.split('\n')
         header = "+" + (self.get_line() * line_char) + "+"
         for index, line in enumerate(message_lines):
@@ -46,8 +50,7 @@ class TextMenu:
             self.display_items()
 
     def validate(self, raw, **kwargs):
-        regex = kwargs.get("regex")
-        clean_input = re.search(regex, raw)
+        clean_input = re.search(self.regex, raw)
         try:
             if clean_input:
                 return clean_input.group()
@@ -68,7 +71,6 @@ class TextMenu:
             except ValueError as e:
                 input("\n{}".format(e))
             else:
-                input(choice)
                 self.items = choice if not hasattr(self, "items") else self.items
                 return choice, self.items
 
@@ -82,18 +84,18 @@ class DictMenu(TextMenu):
             return clean
 
     def display_items(self):
-        if hasattr(self, "main") and getattr(self, "main") == True:
+        if hasattr(self, "main") and getattr(self, "main") is True:
             for key, value in self.items.items():
                 choice = value.__name__.replace('_', ' ')
                 print("{}) {}".format(key, choice))
         else:
             for index, item in enumerate(self.items):
-                print("{}) {}".format(index + 1, item).rjust(2," "))
+                print("{}) {}".format(index + 1, item).rjust(2, " "))
         print("")
 
     def run(self, **kwargs):
         choice, self.items = super().run(**kwargs)
-        return str(choice), self.items # self.items[choice]
+        return str(choice), self.items
 
 
 class ArrayMenu(TextMenu):
@@ -111,12 +113,9 @@ class ArrayMenu(TextMenu):
 
     def display_items(self):
         for index, item in enumerate(self.items):
-            print("{}) {}".format(index + 1, item["name"]).rjust(2," "))
+            print("{}) {}".format(index + 1, item[self.items_key]).rjust(2, " "))
         print("")
 
     def run(self, **kwargs):
         choice, self.items = super().run(**kwargs)
-        input("this")
-        input(choice)
-        input(self.items)
-        return int(choice - 1), self.items #self.items[choice - 1]
+        return int(choice - 1), self.items
