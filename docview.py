@@ -73,7 +73,7 @@ class DocView:
             chosen_func = prompts[choice]
             choice, item = chosen_func(records)
             if not item == 'q':
-                self.view.print_item(item)
+                self.view.print_item((choice, item))
         return method
 
     def pre_prompt(regex, menu_type):
@@ -119,7 +119,9 @@ class DocView:
             return method
         return wrapper
 
-    def unpack_results(self, *task):
+    def unpack_results(self, task):
+        input(task)
+        task = task[1]
         while task.__class__.__name__ == 'tuple':
             toss, task = task
         return task

@@ -62,13 +62,13 @@ What would you like to do?"""
         *index*Enter an item index:*index*
         *item*What field would you like to edit?*item*
         *edit*Please enter new value*edit*"""
-        recordIndex = records.index(menu_input["index"])
-        task = records.pop(recordIndex)
-        for key, value in record.items():
+        taskIndex = records.index(menu_input["index"])
+        task = records.pop(taskIndex)
+        for key, value in task.items():
             if value == menu_input['item']:
                 search_key = key
         menu_input["index"][search_key] = menu_input["edit"]
-        records.insert(recordIndex, record)
+        records.insert(taskIndex, task)
         self.model.save_records(records)
         input("Record edited!")
         return None, task
@@ -125,7 +125,7 @@ What would you like to do?"""
         return tasks
 
     def print_item(self, args):
-        task = self.view.unpack_results(*args)
+        task = self.view.unpack_results(args)
         line_length = 30
         print("\033c", end="")
         print(task["date"])
