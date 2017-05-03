@@ -69,7 +69,8 @@ class TextMenu:
             except ValueError as e:
                 input("\n{}".format(e))
             else:
-                self.items = choice if not hasattr(self, "items") else self.items
+                if not hasattr(self, "items"):
+                    self.items = choice
                 return choice, self.items
 
 
@@ -111,7 +112,9 @@ class ArrayMenu(TextMenu):
 
     def display_items(self):
         for index, item in enumerate(self.items):
-            print("{}) {}".format(index + 1, item[self.items_key]).rjust(2, " "))
+            number = index + 1
+            shown = item[self.items_key]
+            print("{}) {}".format(number, shown).rjust(2, " "))
         print("")
 
     def run(self, **kwargs):
