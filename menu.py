@@ -1,5 +1,5 @@
 import re
-import subprocess
+import shutil
 
 
 class TextMenu:
@@ -24,9 +24,7 @@ class TextMenu:
         print("")
 
     def get_line(self):
-        rows, columns = subprocess.check_output(
-                                   ['stty', 'size']).decode().split()
-        return int(columns) - 2
+        return shutil.get_terminal_size().columns - 2
 
     def get_header(self):
         line_char = "-"

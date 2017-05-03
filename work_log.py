@@ -4,8 +4,7 @@ import sys
 import re
 
 from math import ceil
-from datetime import datetime, timedelta
-from collections import OrderedDict
+from datetime import datetime
 
 from docview import DocView
 from csv_interface import CSVInterface
@@ -28,11 +27,15 @@ What would you like to do?"""
 
     @DocView.main_prompt
     def run(self):
-        return self.model.read_records()
+        try:
+            records = self.model.read_records()
+        except IOError:
+            input("Read/Write error!")
+        return records
 
     @DocView.pre_prompt(r"([\w\s]+)", "text:name")
     @DocView.pre_prompt(r"([\d]+)", "text:minutes")
-    @DocView.pre_prompt(r"([\w\d\s.\?\!:\-]+)", "text:notes")
+    @DocView.pre_prompt(r"([\w\d\s.,\?\!:\-]+)", "text:notes")
     def add_entry(self, records, **menu_input):
         """DocView
         *notes*Please enter any notes related to this task*notes*
@@ -40,7 +43,10 @@ What would you like to do?"""
         *name*Please enter a name for the task*name*"""
         menu_input["date"] = datetime.now().date()
         task = menu_input
-        self.model.write_record(**task)
+        try:
+            self.model.write_record(**task)
+        except IOError:
+            input("Read/Write error!")
         input("Record written!")
         return None, task
 
@@ -50,7 +56,10 @@ What would you like to do?"""
         *item*Now enter an item index:*item*"""
         task = menu_input["item"]
         records.remove(task)
-        self.model.save_records(records)
+        try:
+            self.model.save_records(records)
+        except IOError:
+            input("Read/Write error!")
         input("Record removed!")
         return None, task
 
@@ -69,7 +78,10 @@ What would you like to do?"""
                 search_key = key
         menu_input["index"][search_key] = menu_input["edit"]
         records.insert(taskIndex, task)
-        self.model.save_records(records)
+        try:
+            self.model.save_records(records)
+        except IOError:
+            input("Read/Write error!")
         input("Record edited!")
         return None, task
 

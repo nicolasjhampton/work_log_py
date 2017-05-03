@@ -1,7 +1,6 @@
 import re
 import sys
-from functools import partial, wraps, update_wrapper
-from collections import OrderedDict
+from functools import wraps
 from menu import TextMenu, DictMenu, ArrayMenu
 
 
@@ -120,7 +119,6 @@ class DocView:
         return wrapper
 
     def unpack_results(self, task):
-        input(task)
         task = task[1]
         while task.__class__.__name__ == 'tuple':
             toss, task = task
